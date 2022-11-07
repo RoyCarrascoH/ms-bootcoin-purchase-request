@@ -186,13 +186,14 @@ public class BootcoinPurchaseRequestServiceImpl implements BootcoinPurchaseReque
 
     public Mono<BootcoinPurchaseRequest> validateBalanceAccountAndBootcoinForTransfer(BootcoinPurchaseRequest bootcoinPurchaseRequest) {
 
+        log.info("--validateBalanceAccountAndBootcoinForTransfer---------bootcoinPurchaseRequest : " + bootcoinPurchaseRequest);
         return Mono.just(bootcoinPurchaseRequest)
                 .flatMap(bpr -> clientRepository.findClientByDni(bpr.getClient().getDocumentNumber()))
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Cliente", "DocumentNumber", bootcoinPurchaseRequest.getClient().getDocumentNumber())))
                 .flatMap(cl -> {
                     if (bootcoinPurchaseRequest.getMethodOfPayment().equals("transfer-out")) {
                         return bankAccountRepository.findByDocumentNumber(bootcoinPurchaseRequest.getClient().getDocumentNumber())
-                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Cuenta", "DocumentNumber", bootcoinPurchaseRequest.getClient().getDocumentNumber())))
+                                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Cuenta Comprador", "DocumentNumber", bootcoinPurchaseRequest.getClient().getDocumentNumber())))
                                 .doOnNext(a -> log.info("----doOnNext-------a1 : " + a))
                                 .flatMap(acc -> exchangeRateRepository.findByCurrencyType(acc.getCurrency())
                                         .flatMap(er -> {
@@ -201,7 +202,7 @@ public class BootcoinPurchaseRequestServiceImpl implements BootcoinPurchaseReque
                                                 return Mono.error(new ResourceNotFoundException("Account Balance", "Balance", acc.getBalance().toString()));
                                             } else {
                                                 return bankAccountRepository.findByDocumentNumber(bootcoinPurchaseRequest.getBootcoinsForSale().getClient().getDocumentNumber())
-                                                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Cuenta", "DocumentNumber", bootcoinPurchaseRequest.getBootcoinsForSale().getClient().getDocumentNumber())))
+                                                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Cuenta vendedor", "DocumentNumber", bootcoinPurchaseRequest.getBootcoinsForSale().getClient().getDocumentNumber())))
                                                         .doOnNext(a2 -> log.info("----doOnNext-------a2 : " + a2))
                                                         .flatMap(acc2 -> {
                                                             MovementDto movement = MovementDto.builder()
@@ -219,7 +220,7 @@ public class BootcoinPurchaseRequestServiceImpl implements BootcoinPurchaseReque
                                                                         BootcoinMovement bootcoinMovement = BootcoinMovement.builder()
                                                                                 .documentNumber(bootcoinPurchaseRequest.getClient().getDocumentNumber())
                                                                                 .bootcoinMovementType("transfer-out")
-                                                                                .amount(total)
+                                                                                .amount(bootcoinPurchaseRequest.getAmount())
                                                                                 .currency(acc.getCurrency())
                                                                                 .documentNumberForTransfer(acc2.getClient().getDocumentNumber())
                                                                                 .build();
