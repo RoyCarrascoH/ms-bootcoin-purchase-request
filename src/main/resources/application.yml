@@ -17,7 +17,7 @@ local:
       ms-exchange-rate: localhost
 spring:
   application:
-    name: service-bootcoin-movement
+    name: service-bootcoin-movement-purchase-request
   data:
     mongodb:
       uri: mongodb://localhost:27017/BuyBootcoinDB
